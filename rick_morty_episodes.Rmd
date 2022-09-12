@@ -1,14 +1,16 @@
 ---
 title: "Rick and Morty's IMDB Scoring"
 author: "Mauro"
-date: "2022-09-10"
-output: html_document
-editor_options: 
-  chunk_output_type: console
+date: "2022-09-11"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ## Best Rick And Morty Season
@@ -22,12 +24,18 @@ library(stringr)
 df <- df %>%
     mutate(across('name', str_replace, "\"", "")) %>%
     mutate(across('name', str_replace, '"', "")) %>% 
-    filter(season != 6)
+    filter(season != 6) %>% 
+    mutate(cod_episode = paste0('s',season,'e',
+                                ifelse(episode < 10, paste0('0', episode), 
+                                       as.character(episode)))) %>% 
+    mutate(air_date = as.Date(air_date, format="%B %d, %Y"))
 
+knitr::kable(
 df %>%
     group_by(season) %>%
     summarise_at(vars(rating), list(rating = mean)) %>% 
     arrange(desc(rating))
+, "pipe")
 ```
 
 Using the mean IMDB score of every episode we conclude that best season is 3 and the lowest ranked season is the fifth.
@@ -35,25 +43,73 @@ Using the mean IMDB score of every episode we conclude that best season is 3 and
 # Top 10 episodes
 
 ```{r episodes, echo = FALSE}
+knitr::kable(
 df %>% slice_max(rating, n = 10) %>% select(name, season, rating)
+, "pipe")
 ```
 
 # Worst 10 episodes
 
 ```{r episodes_l, echo = FALSE}
+knitr::kable(
 df %>% slice_min(rating, n = 10) %>% select(name, season, rating)
+, "pipe")
 ```
 
+# Best director
+
+```{r director}
+knitr::kable(
+df %>% 
+    group_by(directed_by) %>% 
+    summarize(
+        mean_imdb = mean(rating, na.rm = TRUE),
+        count = n(),
+        sd = sd(rating, na.rm = TRUE)) %>% 
+    arrange(desc(mean_imdb))
+, "pipe")
+```
+
+# Best writers
+
+```{r writers,  warning=FALSE}
+knitr::kable(
+dfw <- df %>% 
+    select(cod_episode, written_by) %>% 
+    mutate(written_by = str_replace(written_by, "&", ",")) %>% 
+    mutate(written_by = str_replace(written_by, " ,", ",")) %>%
+    tidyr::separate(written_by, c('1', '2', '3', '4', '5', '6'), sep = ',') %>% 
+    mutate_if(is.character, str_trim) %>% 
+    tidyr::pivot_longer(cols = c('1', '2', '3', '4', '5', '6'), 
+                        names_to = NULL,
+                        values_to = 'writer') %>% 
+    na.omit(writer) %>% 
+    left_join(df, by = 'cod_episode') %>% 
+    group_by(writer) %>%
+    summarise(mean_imdb = mean(rating), count = n()) %>% 
+    arrange(desc(mean_imdb))
+, "pipe")
+```
+
+We observe that some of the top writers did only colaborate in one episode, so we'll filter the data in order to check writers of more than two episodes.
+
+```{r writers2}
+knitr::kable(
+dfw <- dfw %>% filter(count > 1)
+, "pipe")
+```
 
 ## Rick and Morty IMDB episode scoring over time
 
 ```{r graph, echo=FALSE, message=FALSE, warning=FALSE}
-df$date <- as.Date(df$air_date, format="%B %d, %Y")
+library(ggplot2)
+library(hrbrthemes)
 
-library(plotly)
 
-fig <- plot_ly(df, x = ~date, y = ~rating, type = 'scatter', mode = 'lines', text = ~name)
-
-fig
+df %>%
+    ggplot( aes(x=air_date, y=rating, label = cod_episode)) +
+    geom_line() +
+    geom_point() +
+    geom_text(aes(color=factor(season)))
 ```
 
