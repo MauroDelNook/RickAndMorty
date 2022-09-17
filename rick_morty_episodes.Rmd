@@ -2,33 +2,39 @@
 title: "Rick and Morty's IMDB Scoring"
 author: "Mauro"
 date: "2022-09-11"
-output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
-
+output: 
+  html_document:
+    keep_md: true
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+
+# starting libraries
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(viridis)
+library(lubridate)
 ```
 
-## Best Rick And Morty Season
+# Seasons
 
 ```{r season, echo=FALSE, message=FALSE, warning=FALSE}
 df <- rio::import('rick_morty_imdb.xlsx')
 
-library(dplyr)
-library(stringr) 
-
 df <- df %>%
     mutate(across('name', str_replace, "\"", "")) %>%
     mutate(across('name', str_replace, '"', "")) %>% 
+    mutate(episode_num = row_number()) %>% 
     filter(season != 6) %>% 
     mutate(cod_episode = paste0('s',season,'e',
                                 ifelse(episode < 10, paste0('0', episode), 
                                        as.character(episode)))) %>% 
-    mutate(air_date = as.Date(air_date, format="%B %d, %Y"))
+    mutate(air_date = mdy(air_date)) %>% 
+    mutate(season = factor(season))
 
 knitr::kable(
 df %>%
@@ -38,9 +44,19 @@ df %>%
 , "pipe")
 ```
 
-Using the mean IMDB score of every episode we conclude that best season is 3 and the lowest ranked season is the fifth.
+Using the mean IMDB score of every episode we conclude that best season is #3 and the lowest ranked season is the fifth.
 
-# Top 10 episodes
+```{r season_boxplot}
+ggplot(df, aes(x=season, y=rating, fill=season)) + 
+    geom_boxplot(alpha=0.9) +
+    theme(legend.position="none") +
+    scale_fill_viridis(discrete = TRUE) + 
+    theme_bw()
+```
+
+# Episodes
+
+## Top 10 episodes
 
 ```{r episodes, echo = FALSE}
 knitr::kable(
@@ -48,7 +64,7 @@ df %>% slice_max(rating, n = 10) %>% select(name, season, rating)
 , "pipe")
 ```
 
-# Worst 10 episodes
+## Worst 10 episodes
 
 ```{r episodes_l, echo = FALSE}
 knitr::kable(
@@ -63,9 +79,10 @@ knitr::kable(
 df %>% 
     group_by(directed_by) %>% 
     summarize(
-        mean_imdb = mean(rating, na.rm = TRUE),
+        mean_imdb = round(mean(rating, na.rm = TRUE),2),
         count = n(),
-        sd = sd(rating, na.rm = TRUE)) %>% 
+        sd = round(sd(rating, na.rm = TRUE),2)
+        ) %>% 
     arrange(desc(mean_imdb))
 , "pipe")
 ```
@@ -73,7 +90,6 @@ df %>%
 # Best writers
 
 ```{r writers,  warning=FALSE}
-knitr::kable(
 dfw <- df %>% 
     select(cod_episode, written_by) %>% 
     mutate(written_by = str_replace(written_by, "&", ",")) %>% 
@@ -84,9 +100,13 @@ dfw <- df %>%
                         names_to = NULL,
                         values_to = 'writer') %>% 
     na.omit(writer) %>% 
-    left_join(df, by = 'cod_episode') %>% 
+    left_join(df, by = 'cod_episode')
+
+knitr::kable(
+dfw_sum <- dfw %>% 
     group_by(writer) %>%
-    summarise(mean_imdb = mean(rating), count = n()) %>% 
+    summarise(mean_imdb = round(mean(rating),2),
+              count = n()) %>% 
     arrange(desc(mean_imdb))
 , "pipe")
 ```
@@ -95,21 +115,20 @@ We observe that some of the top writers did only colaborate in one episode, so w
 
 ```{r writers2}
 knitr::kable(
-dfw <- dfw %>% filter(count > 1)
+dfw_sum %>% filter(count > 1)
 , "pipe")
 ```
 
 ## Rick and Morty IMDB episode scoring over time
 
-```{r graph, echo=FALSE, message=FALSE, warning=FALSE}
-library(ggplot2)
-library(hrbrthemes)
-
-
+```{r graph_over_time, message=FALSE, warning=FALSE}
 df %>%
-    ggplot( aes(x=air_date, y=rating, label = cod_episode)) +
+    ggplot( aes(x=episode_num, y=rating, color = season)) +
     geom_line() +
-    geom_point() +
-    geom_text(aes(color=factor(season)))
+    geom_point() + 
+    scale_color_viridis(discrete = TRUE) + 
+    theme_bw()
 ```
+
+
 
