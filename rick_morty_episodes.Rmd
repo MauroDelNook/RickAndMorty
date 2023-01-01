@@ -29,7 +29,6 @@ df <- df %>%
     mutate(across('name', str_replace, "\"", "")) %>%
     mutate(across('name', str_replace, '"', "")) %>% 
     mutate(episode_num = row_number()) %>% 
-    filter(season != 6) %>% 
     mutate(cod_episode = paste0('s',season,'e',
                                 ifelse(episode < 10, paste0('0', episode), 
                                        as.character(episode)))) %>% 
@@ -40,6 +39,7 @@ knitr::kable(
 df %>%
     group_by(season) %>%
     summarise_at(vars(rating), list(rating = mean)) %>% 
+    mutate(rating = round(rating, 2)) %>% 
     arrange(desc(rating))
 , "pipe")
 ```
