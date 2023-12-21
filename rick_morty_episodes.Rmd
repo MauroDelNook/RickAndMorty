@@ -1,7 +1,7 @@
 ---
 title: "Rick and Morty's IMDB Scoring"
 author: "Mauro"
-date: "2022-09-11"
+date: "2023-12-21"
 output: 
   html_document:
     keep_md: true
@@ -18,6 +18,7 @@ library(stringr)
 library(ggplot2)
 library(viridis)
 library(lubridate)
+library(ggrepel)
 ```
 
 # Seasons
@@ -38,13 +39,15 @@ df <- df %>%
 knitr::kable(
 df %>%
     group_by(season) %>%
-    summarise_at(vars(rating), list(rating = mean)) %>% 
-    mutate(rating = round(rating, 2)) %>% 
-    arrange(desc(rating))
+    summarize(
+        mean_imdb = round(mean(rating, na.rm = TRUE),2),
+        sd = round(sd(rating, na.rm = TRUE),2)
+        ) %>% 
+    arrange(desc(mean_imdb))
 , "pipe")
 ```
 
-Using the mean IMDB score of every episode we conclude that best season is #3 and the lowest ranked season is the fifth.
+Using the mean IMDB score of every episode we conclude that best season is #3 and the lowest ranked season is the seventh. This season is also the most "volatile", with the highest standard deviation. 
 
 ```{r season_boxplot}
 ggplot(df, aes(x=season, y=rating, fill=season)) + 
@@ -60,7 +63,9 @@ ggplot(df, aes(x=season, y=rating, fill=season)) +
 
 ```{r episodes, echo = FALSE}
 knitr::kable(
-df %>% slice_max(rating, n = 10) %>% select(name, season, rating)
+df %>% 
+    slice_max(rating, n = 10) %>% 
+    select(name, season, rating)
 , "pipe")
 ```
 
@@ -68,7 +73,9 @@ df %>% slice_max(rating, n = 10) %>% select(name, season, rating)
 
 ```{r episodes_l, echo = FALSE}
 knitr::kable(
-df %>% slice_min(rating, n = 10) %>% select(name, season, rating)
+df %>% 
+    slice_min(rating, n = 10) %>% 
+    select(name, season, rating)
 , "pipe")
 ```
 
@@ -111,11 +118,12 @@ dfw_sum <- dfw %>%
 , "pipe")
 ```
 
-We observe that some of the top writers did only colaborate in one episode, so we'll filter the data in order to check writers of more than two episodes.
+We observe that some of the top writers did only collaborate in one episode, so we'll filter the data in order to check writers of more than two episodes.
 
 ```{r writers2}
 knitr::kable(
-dfw_sum %>% filter(count > 1)
+dfw_sum %>% 
+    filter(count > 1)
 , "pipe")
 ```
 
@@ -127,7 +135,12 @@ df %>%
     geom_line() +
     geom_point() + 
     scale_color_viridis(discrete = TRUE) + 
-    theme_bw()
+    theme_bw() + 
+    geom_text_repel(aes(label=ifelse(rating>9.39,as.character(name),'')),
+                    hjust=0,vjust=1) + 
+    geom_text_repel(aes(label=ifelse(rating<6,as.character(name),'')),
+                    hjust=0,vjust=-1)
+
 ```
 
 
