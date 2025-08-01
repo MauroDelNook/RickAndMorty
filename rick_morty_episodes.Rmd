@@ -52,11 +52,9 @@ Using the mean IMDB score of every episode we conclude that best season is #3 an
 
 ```{r season_boxplot}
 ggplot(df, aes(x=season, y=rating, fill=season)) + 
-    geom_boxplot(alpha=.9) +
-    geom_dotplot(binaxis='y', stackdir='center', dotsize=.5, alpha=.75) + 
-#    theme(legend.position="right") +
-    scale_fill_viridis(discrete = TRUE) #+ 
-    #theme_bw()
+    geom_boxplot(alpha = .9) +
+    geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = .5, alpha = .75, binwidth = .2) +
+    scale_fill_viridis(discrete = TRUE)
 ```
 
 # Episodes
@@ -133,16 +131,34 @@ dfw_sum %>%
 
 ```{r graph_over_time, message=FALSE, warning=FALSE}
 df %>%
-    ggplot( aes(x=episode_num, y=rating, color = season)) +
-    geom_line() +
-    geom_point() + 
-    scale_color_viridis(discrete = TRUE) + 
-    theme_bw() + 
-    geom_text_repel(aes(label=ifelse(rating>9.39,as.character(name),'')),
-                    hjust=0,vjust=1) + 
-    geom_text_repel(aes(label=ifelse(rating<6,as.character(name),'')),
-                    hjust=0,vjust=-1)
-
+  ggplot(aes(x = episode_num, y = rating, color = season)) +
+  geom_line(size = 1) +  # fixed size, outside aes()
+  geom_point(size = 3, shape = 21, stroke = 1, aes(fill = season), color = "black") +
+  scale_color_viridis(discrete = TRUE, option = "viridis") +
+  scale_fill_viridis(discrete = TRUE, option = "viridis") +
+  geom_text_repel(
+    aes(label = ifelse(rating > 9.39 | rating < 6, as.character(name), '')),
+    color = "white", size = 3, box.padding = 0.35
+  ) +
+  theme_dark(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "#1e1e1e", color = NA),
+    panel.background = element_rect(fill = "#1e1e1e", color = NA),
+    legend.background = element_rect(fill = "#1e1e1e", color = NA),
+    legend.key = element_rect(fill = "#1e1e1e", color = NA),
+    plot.title = element_text(color = "white", size = 16, face = "bold"),
+    axis.title = element_text(color = "white"),
+    axis.text = element_text(color = "white"),
+    legend.text = element_text(color = "white"),
+    legend.title = element_text(color = "white")
+  ) +
+  labs(
+    x = "Episode Number",
+    y = "Rating",
+    color = "Season",
+    fill = "Season",
+    title = "Ratings over Episodes by Season"
+  )
 ```
 
 

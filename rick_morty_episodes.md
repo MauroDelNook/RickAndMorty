@@ -27,12 +27,6 @@ editor_options:
 
 Using the mean IMDB score of every episode we conclude that best season is #3 and the lowest ranked season is the seventh. This season is also the most "volatile", with the highest standard deviation. 
 
-
-```
-## Bin width defaults to 1/30 of the range of the data. Pick better value with
-## `binwidth`.
-```
-
 ![](rick_morty_episodes_files/figure-html/season_boxplot-1.png)<!-- -->
 
 # Episodes
