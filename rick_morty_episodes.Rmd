@@ -41,6 +41,7 @@ df %>%
     group_by(season) %>%
     summarize(
         mean_imdb = round(mean(rating, na.rm = TRUE),2),
+        median_imdb = round(median(rating, na.rm = TRUE),2),
         sd = round(sd(rating, na.rm = TRUE),2)
         ) %>% 
     arrange(desc(mean_imdb))
@@ -51,10 +52,11 @@ Using the mean IMDB score of every episode we conclude that best season is #3 an
 
 ```{r season_boxplot}
 ggplot(df, aes(x=season, y=rating, fill=season)) + 
-    geom_boxplot(alpha=0.9) +
-    theme(legend.position="none") +
-    scale_fill_viridis(discrete = TRUE) + 
-    theme_bw()
+    geom_boxplot(alpha=.9) +
+    geom_dotplot(binaxis='y', stackdir='center', dotsize=.5, alpha=.75) + 
+#    theme(legend.position="right") +
+    scale_fill_viridis(discrete = TRUE) #+ 
+    #theme_bw()
 ```
 
 # Episodes
